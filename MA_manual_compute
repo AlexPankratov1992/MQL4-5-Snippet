@@ -1,0 +1,81 @@
+double iMAOnArray(double &Array[], int total, int iMAPeriod, int ma_shift, ENUM_MA_METHOD ma_method, int Shift)
+{
+	double buf[];
+	if ((total > 0) && (total <= iMAPeriod)) return(0);
+	if (total == 0) total = ArraySize(Array);
+	if (ArrayResize(buf, total) < 0) return(0);
+	
+	switch(ma_method)
+	{
+		// Simplified SMA. No longer works with ma_shift parameter.
+		case MODE_SMA:
+		{
+			double sum = 0;
+			for (int i = Shift; i < Shift + iMAPeriod; i++)
+				sum += Array[i] / iMAPeriod;
+			return(sum);
+		}
+		case MODE_EMA:
+		{
+			double pr = 2.0 / (iMAPeriod + 1);
+			int pos = total - 2;
+			while (pos >= 0)
+			{
+				if (pos == total - 2) buf[pos + 1] = Array[pos + 1];
+				buf[pos] = Array[pos] * pr + buf[pos + 1] * (1 - pr);
+				pos--;
+			}
+			return(buf[Shift + ma_shift]);
+		}
+		case MODE_SMMA:
+		{
+			double sum = 0;
+			int i, k, pos;
+			pos = total - iMAPeriod;
+			while (pos >= 0)
+			{
+				if (pos == total - iMAPeriod)
+				{
+					for (i = 0, k = pos; i < iMAPeriod; i++, k++)
+					{
+						sum += Array[k];
+						buf[k] = 0;
+					}
+				}
+				else sum = buf[pos + 1] * (iMAPeriod - 1) + Array[pos];
+				buf[pos] = sum / iMAPeriod;
+				pos--;
+			}
+			return(buf[Shift + ma_shift]);
+		}
+		case MODE_LWMA:
+		{
+			double sum = 0.0, lsum = 0.0;
+			double price;
+			int i, weight = 0, pos = total - 1;
+			for (i = 1; i <= iMAPeriod; i++, pos--)
+			{
+				price = Array[pos];
+				sum += price * i;
+				lsum += price;
+				weight += i;
+			}
+			pos++;
+			i = pos + iMAPeriod;
+			while (pos >= 0)
+			{
+				buf[pos] = sum / weight;
+				if (pos == 0) break;
+				pos--;
+				i--;
+				price = Array[pos];
+				sum = sum - lsum + price * iMAPeriod;
+				lsum -= Array[i];
+				lsum += price;
+			}
+			return(buf[Shift + ma_shift]);
+		}
+		default: return(0);
+	}
+	return(0);
+}
