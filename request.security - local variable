@@ -1,0 +1,15 @@
+//@version=5
+indicator("local variable in another context", overlay=true, max_bars_back = 5000, max_labels_count = 500)
+
+
+string project_timeframe = input.timeframe(defval="", title="trend projection timeframe:")
+
+varTest(offset) => 
+    var a = 0
+    a := na(a[1])?0:a[1]+offset
+    a
+
+a = varTest(1)
+label.new(bar_index, high+syminfo.mintick*math.random(10000), xloc = xloc.bar_index, yloc=yloc.price, text = str.tostring(a))
+sec = request.security(syminfo.ticker, project_timeframe, expression=varTest(10))
+label.new(bar_index, high+syminfo.mintick*math.random(10000), xloc = xloc.bar_index, yloc=yloc.price, text = str.tostring(sec))
